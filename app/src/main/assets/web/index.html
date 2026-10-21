@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06101d">
+<title>انتقال‌یار محلی</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#06101d;color:#edf4ff;font-family:Tahoma,Arial,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:18px}
+.card{background:#0b1828;border:1px solid #203952;border-radius:22px;padding:20px;margin:15px 0}
+h1{margin:0;font-size:30px}
+.sub,.muted{color:#91a3b9;line-height:1.9}
+.ok{background:#09291f;color:#6fe0ae;border-radius:12px;padding:12px}
+.pick{display:block;width:100%;padding:18px;border:1px dashed #3c5a78;border-radius:16px;background:#0d2034;color:white;text-align:center;cursor:pointer;margin-top:15px}
+input{display:none}
+.row{padding:13px 0;border-bottom:1px solid #1c3045}
+.name{font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{color:#8092a8;font-size:12px}
+.bar{height:7px;background:#20354c;border-radius:9px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:#438cff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>⇄ انتقال‌یار</h1>
+<p class="sub">اتصال مستقیم روی شبکه Wi-Fi محلی؛ بدون اینترنت و بدون سرور ابری.</p>
+<div class="ok">● اتصال محلی برقرار است</div>
+</div>
+
+<div class="card">
+<h2>ارسال فایل به گوشی اول</h2>
+<p class="muted">فایل‌ها مستقیماً به حافظه خصوصی برنامه در گوشی میزبان ارسال می‌شوند.</p>
+<label class="pick">
+＋ انتخاب چند فایل
+<input id="files" type="file" multiple>
+</label>
+<div id="list"></div>
+</div>
+
+<div class="card">
+<h3>امنیت و حریم خصوصی</h3>
+<p class="muted">این صفحه از خود گوشی اول ارائه شده است. فایل به اینترنت یا سرویس ابری ارسال نمی‌شود.</p>
+</div>
+</div>
+
+<script>
+const files=document.getElementById('files');
+const list=document.getElementById('list');
+
+function esc(s){
+  return s.replace(/[&<>"']/g,m=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[m]));
+}
+
+function size(n){
+  let u=['B','KB','MB','GB'],i=0;
+  while(n>=1024&&i<3){n/=1024;i++}
+  return (i?n.toFixed(n<10?1:0):Math.round(n))+' '+u[i];
+}
+
+files.onchange=()=>{
+  [...files.files].forEach(upload);
+};
+
+function upload(f){
+  const row=document.createElement('div');
+  row.className='row';
+  row.innerHTML=
+    '<div class=name>'+esc(f.name)+'</div>'+
+    '<div class=meta>'+size(f.size)+' — <span>0%</span></div>'+
+    '<div class=bar><i></i></div>';
+
+  list.prepend(row);
+
+  const bar=row.querySelector('i');
+  const pct=row.querySelector('span');
+
+  const x=new XMLHttpRequest();
+  x.open('POST','/api/upload',true);
+  x.setRequestHeader('X-Filename',encodeURIComponent(f.name));
+
+  x.upload.onprogress=e=>{
+    if(e.lengthComputable){
+      let p=e.loaded/e.total*100;
+      bar.style.width=p+'%';
+      pct.textContent=Math.round(p)+'%';
+    }
+  };
+
+  x.onload=()=>{
+    pct.textContent=x.status===200?'✓ دریافت شد':'✕ خطا';
+  };
+
+  x.onerror=()=>{
+    pct.textContent='✕ خطای شبکه';
+  };
+
+  x.send(f);
+}
+</script>
+</body>
+</html>
